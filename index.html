@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>TDK Sözlük (Eksiksiz)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
+    h1 { color: darkred; }
+    h2 { margin-top: 20px; color: #333; }
+    .anlam, .deyim, .birlesik {
+      margin: 8px 0;
+      padding: 10px;
+      background: #fff;
+      border-left: 4px solid darkred;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .deyim { border-left-color: #55f; background: #eef; }
+    .birlesik { border-left-color: green; background: #f9f9f9; }
+  </style>
+</head>
+<body>
+  <h1>📖 TDK Sözlük</h1>
+  <input id="kelime" type="text" placeholder="Bir kelime yaz..." />
+  <button onclick="ara()">Ara</button>
+
+  <div id="sonuc"></div>
+
+  <script>
+    async function ara() {
+      const kelime = document.getElementById("kelime").value.trim();
+      const sonucDiv = document.getElementById("sonuc");
+      sonucDiv.innerHTML = "⏳ Yükleniyor...";
+
+      try {
+        // HTML sayfasını indir
+        const res = await fetch(`https://sozluk.gov.tr/?kelime=${encodeURIComponent(kelime)}`, {
+          headers: { "User-Agent": "Mozilla/5.0" }
+        });
+        const html = await res.text();
+
+        // Geçici DOM oluştur
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        let htmlOut = `<h2>🔹 Sözcük: ${kelime}</h2>`;
+
+        // 🔹 Anlamlar
+        const anlamlar = doc.querySelectorAll(".anlam");
+        if (anlamlar.length > 0) {
+          htmlOut += `<h2>Anlamlar</h2>`;
+          anlamlar.forEach(a => {
+            htmlOut += `<div class="anlam">${a.innerText}</div>`;
+          });
+        }
+
+        // 🔹 Örnekler (anlamların içinde geliyor zaten)
+
+        // 🔹 Deyimler & Atasözleri
+        const deyimler = doc.querySelectorAll("#atasoz");
+        if (deyimler.length > 0) {
+          htmlOut += `<h2>📖 Deyimler & Atasözleri</h2>`;
+          deyimler.forEach(d => {
+            htmlOut += `<div class="deyim">${d.innerText}</div>`;
+          });
+        }
+
+        // 🔹 Birleşik fiiller ve kalıp sözler
+        const birlesikler = doc.querySelectorAll("#birlesikler a");
+        if (birlesikler.length > 0) {
+          htmlOut += `<h2>📚 Birleşik Fiiller & Kalıp Sözler</h2>`;
+          birlesikler.forEach(b => {
+            htmlOut += `<div class="birlesik">${b.innerText}</div>`;
+          });
+        }
+
+        sonucDiv.innerHTML = htmlOut;
+      } catch (err) {
+        sonucDiv.innerHTML = "⚠️ TDK sunucusuna bağlanılamadı veya engellendi.";
+      }
+    }
+  </script>
+</body>
+</html>
