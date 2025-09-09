@@ -77,6 +77,11 @@
       return await res.json();
     }
 
+    function toRoman(num) {
+      const romans = ["","I","II","III","IV","V","VI","VII","VIII","IX"];
+      return romans[num] || num;
+    }
+
     function formatAnlamlar(liste) {
       let html = "";
       const coklu = liste.length > 1;
@@ -110,10 +115,8 @@
 
         let html = `<h2>🔹 Sözcük: ${kelime}</h2>`;
 
-        // birden fazla kayıt (eş sesliler) varsa her biri için dön
         for (const kayit of data) {
-          // Başlık (ör. pas (I), pas (II))
-          let baslik = kayit.kac && kayit.kac !== "0" ? ` (${kayit.kac})` : "";
+          let baslik = kayit.kac && kayit.kac !== "0" ? ` (${toRoman(parseInt(kayit.kac))})` : "";
           html += `<h2>${kayit.madde}${baslik}</h2>`;
 
           // 🔹 Anlamlar
@@ -143,7 +146,6 @@
               }
             }
 
-            // grupla
             const gruplar = {};
             deyimler.forEach(d => {
               if (!gruplar[d.madde]) gruplar[d.madde] = [];
