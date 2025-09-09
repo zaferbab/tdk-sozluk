@@ -26,11 +26,11 @@
   <div id="sonuc"></div>
 
   <script>
-    async function sozlukGetir(kelime) {
-      const url = `https://sozluk.gov.tr/gts?ara=${encodeURIComponent(kelime)}`;
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    // ⚠️ Buradaki adresi kendi Vercel deploy linkinle değiştir!
+    const PROXY_URL = "tdk-sozluk-iota.vercel.app/api/tdk";
 
-      const res = await fetch(proxyUrl);
+    async function sozlukGetir(kelime) {
+      const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
       return await res.json();
     }
 
