@@ -77,8 +77,9 @@
       return await res.json();
     }
 
+    // ✅ Romen rakamı çevirici
     function toRoman(num) {
-      const romans = ["","I","II","III","IV","V","VI","VII","VIII","IX"];
+      const romans = ["","I","II","III","IV","V","VI","VII","VIII","IX","X"];
       return romans[num] || num;
     }
 
@@ -116,7 +117,10 @@
         let html = `<h2>🔹 Sözcük: ${kelime}</h2>`;
 
         for (const kayit of data) {
-          let baslik = kayit.kac && kayit.kac !== "0" ? ` (${toRoman(parseInt(kayit.kac))})` : "";
+          // ✅ Sesteşler için Romen rakamı göster
+          let baslik = kayit.kac && kayit.kac !== "0" 
+            ? ` (${toRoman(parseInt(kayit.kac))})` 
+            : "";
           html += `<h2>${kayit.madde}${baslik}</h2>`;
 
           // 🔹 Anlamlar
