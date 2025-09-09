@@ -47,14 +47,11 @@
     #sonuc { max-width: 700px; margin: auto; }
     .anlam, .deyim, .birlesik {
       margin: 12px 0;
-      padding: 12px;
-      background: white;
-      border-left: 5px solid darkred;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 8px;
+      border-left: 4px solid darkred;
     }
-    .deyim { border-left-color: #0055cc; background: #f0f6ff; }
-    .birlesik { border-left-color: green; background: #f6fff6; }
+    .deyim { border-left-color: #0055cc; }
+    .birlesik { border-left-color: green; }
     h2 { color: #333; margin-top: 25px; }
   </style>
 </head>
@@ -72,8 +69,7 @@
   <div id="sonuc"></div>
 
   <script>
-    // Senin Vercel proxy adresin
-    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
+    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk"; // senin Vercel adresin
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
@@ -90,7 +86,7 @@
         }
         if (a.orneklerListe) {
           a.orneklerListe.forEach(o => {
-            html += `<br><em>Örnek:</em> "${o.ornek}"`;
+            html += `<br>"${o.ornek}"`;
           });
         }
         html += `</div>`;
