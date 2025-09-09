@@ -49,7 +49,7 @@
       margin: 12px 0;
       padding: 8px;
       border-left: 4px solid darkred;
-      background: transparent; /* ✅ arka plan şeffaf */
+      background: transparent;
     }
     .deyim { border-left-color: #0055cc; background: transparent; }
     .birlesik { border-left-color: green; background: transparent; }
@@ -165,29 +165,4 @@
           const birlesikKelimeler = kayit.birlesikler.split(", ");
           html += `<h2>📚 Birleşik Kelimeler</h2>`;
           for (const bk of birlesikKelimeler) {
-            const bData = await sozlukGetir(bk);
-            if (bData && bData[0] && bData[0].anlamlarListe) {
-              const liste = bData[0].anlamlarListe;
-              const coklu = liste.length > 1;
-              html += `<div class="birlesik"><b>${bk}</b><br>`;
-              liste.forEach(a => {
-                if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
-                  html += `${a.anlam_sira}. ${a.anlam}<br>`;
-                } else {
-                  html += `${a.anlam}<br>`;
-                }
-              });
-              html += `</div>`;
-            }
-          }
-        }
-
-        sonucDiv.innerHTML = html;
-      } catch (err) {
-        console.error(err);
-        sonucDiv.innerHTML = "⚠️ TDK sunucusuna veya proxy servisine ulaşılamadı.";
-      }
-    }
-  </script>
-</body>
-</html>
+            const bData
