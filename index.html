@@ -19,10 +19,7 @@
       margin-bottom: 20px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-    h1 {
-      margin: 0;
-      font-size: 1.8em;
-    }
+    h1 { margin: 0; font-size: 1.8em; }
     #arama {
       display: flex;
       justify-content: center;
@@ -46,13 +43,8 @@
       border-radius: 0 8px 8px 0;
       transition: background 0.3s;
     }
-    button:hover {
-      background: #a00000;
-    }
-    #sonuc {
-      max-width: 700px;
-      margin: auto;
-    }
+    button:hover { background: #a00000; }
+    #sonuc { max-width: 700px; margin: auto; }
     .anlam, .deyim, .birlesik {
       margin: 12px 0;
       padding: 12px;
@@ -61,18 +53,9 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .deyim {
-      border-left-color: #0055cc;
-      background: #f0f6ff;
-    }
-    .birlesik {
-      border-left-color: green;
-      background: #f6fff6;
-    }
-    h2 {
-      color: #333;
-      margin-top: 25px;
-    }
+    .deyim { border-left-color: #0055cc; background: #f0f6ff; }
+    .birlesik { border-left-color: green; background: #f6fff6; }
+    h2 { color: #333; margin-top: 25px; }
   </style>
 </head>
 <body>
@@ -81,18 +64,38 @@
   </header>
 
   <div id="arama">
-    <input id="kelime" type="text" placeholder="Bir kelime yazın..." onkeypress="if(event.key==='Enter'){ara();}">
+    <input id="kelime" type="text" placeholder="Bir kelime yazın..." 
+           onkeypress="if(event.key==='Enter'){ara();}">
     <button onclick="ara()">Ara</button>
   </div>
 
   <div id="sonuc"></div>
 
   <script>
-    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk"; // senin proxy adresin
+    // Senin Vercel proxy adresin
+    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
       return await res.json();
+    }
+
+    function formatAnlamlar(liste) {
+      let html = "";
+      liste.forEach(a => {
+        if (a.anlam_sira && a.anlam_sira !== "0") {
+          html += `<div class="anlam"><b>${a.anlam_sira}.</b> ${a.anlam}`;
+        } else {
+          html += `<div class="anlam">${a.anlam}`;
+        }
+        if (a.orneklerListe) {
+          a.orneklerListe.forEach(o => {
+            html += `<br><em>Örnek:</em> "${o.ornek}"`;
+          });
+        }
+        html += `</div>`;
+      });
+      return html;
     }
 
     async function ara() {
@@ -112,23 +115,18 @@
 
         // 🔹 Anlamlar
         if (kayit.anlamlarListe) {
-          kayit.anlamlarListe.forEach(a => {
-            html += `<div class="anlam">${a.anlam}`;
-            if (a.orneklerListe) {
-              a.orneklerListe.forEach(o => {
-                html += `<br><em>Örnek:</em> "${o.ornek}"`;
-              });
-            }
-            html += `</div>`;
-          });
+          html += `<h2>Anlamlar</h2>`;
+          html += formatAnlamlar(kayit.anlamlarListe);
         }
 
-        // 🔹 Deyimler & Atasözleri (hem deyimlerListe hem atasozu)
+        // 🔹 Deyimler & Atasözleri
         if (kayit.deyimlerListe || kayit.atasozu) {
           html += `<h2>📖 Deyimler & Atasözleri</h2>`;
+          let deyimler = [];
+
           if (kayit.deyimlerListe) {
             kayit.deyimlerListe.forEach(d => {
-              html += `<div class="deyim"><b>${d.madde}</b>: ${d.anlam}</div>`;
+              deyimler.push({ madde: d.madde, anlam: d.anlam, sira: d.anlam_sira });
             });
           }
           if (kayit.atasozu) {
@@ -136,12 +134,29 @@
               const detay = await sozlukGetir(a.madde);
               if (detay && detay[0] && detay[0].anlamlarListe) {
                 detay[0].anlamlarListe.forEach(ad => {
-                  html += `<div class="deyim"><b>${a.madde}</b>: ${ad.anlam}</div>`;
+                  deyimler.push({ madde: a.madde, anlam: ad.anlam, sira: ad.anlam_sira });
                 });
-              } else {
-                html += `<div class="deyim"><b>${a.madde}</b></div>`;
               }
             }
+          }
+
+          // grupla
+          const gruplar = {};
+          deyimler.forEach(d => {
+            if (!gruplar[d.madde]) gruplar[d.madde] = [];
+            gruplar[d.madde].push(d);
+          });
+
+          for (const madde in gruplar) {
+            html += `<div class="deyim"><b>${madde}</b><br>`;
+            gruplar[madde].forEach(d => {
+              if (d.sira && d.sira !== "0") {
+                html += `${d.sira}. ${d.anlam}<br>`;
+              } else {
+                html += `${d.anlam}<br>`;
+              }
+            });
+            html += `</div>`;
           }
         }
 
@@ -154,7 +169,11 @@
             if (bData && bData[0] && bData[0].anlamlarListe) {
               html += `<div class="birlesik"><b>${bk}</b><br>`;
               bData[0].anlamlarListe.forEach(a => {
-                html += `${a.anlam}<br>`;
+                if (a.anlam_sira && a.anlam_sira !== "0") {
+                  html += `${a.anlam_sira}. ${a.anlam}<br>`;
+                } else {
+                  html += `${a.anlam}<br>`;
+                }
               });
               html += `</div>`;
             }
