@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- ✅ mobil uyum -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- mobil uyum -->
   <title>Erkan Ulu Okulları Türkçe Zümresi Sözlük Projesi</title>
   <style>
     body {
@@ -33,12 +33,12 @@
     #arama {
       display: flex;
       justify-content: center;
-      flex-wrap: wrap; /* ✅ dar ekranda alt alta geçsin */
+      flex-wrap: wrap;
       margin-bottom: 20px;
     }
     #kelime {
       flex: 1;
-      min-width: 180px; /* ✅ telefon için alt sınır */
+      min-width: 180px;
       padding: 10px;
       border: 2px solid darkred;
       border-radius: 8px 0 0 8px;
@@ -68,7 +68,6 @@
     h2 { color: #333; margin-top: 25px; font-size: 1.2em; }
     h3 { font-size: 1.1em; }
 
-    /* ✅ Küçük ekranlar için (telefon) */
     @media (max-width: 600px) {
       body { padding: 10px; }
       h1 { font-size: 1.2em; }
@@ -79,7 +78,7 @@
       }
       button {
         border-radius: 8px;
-        width: 100%; /* buton tam genişlik */
+        width: 100%;
       }
       #arama { flex-direction: column; align-items: stretch; }
     }
@@ -92,9 +91,8 @@
   </header>
 
   <div id="arama">
-    <input id="kelime" type="text" placeholder="Bir kelime yazın..." 
-           onkeypress="if(event.key==='Enter'){ara();}">
-    <button onclick="ara()">Ara</button>
+    <input id="kelime" type="text" placeholder="Bir kelime yazın...">
+    <button id="araButonu">Ara</button>
   </div>
 
   <div id="sonuc"></div>
@@ -117,4 +115,126 @@
       const coklu = liste.length > 1;
       liste.forEach(a => {
         if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
-          html += `<div class="anlam"><b
+          html += `<div class="anlam"><b>${a.anlam_sira}.</b> ${a.anlam}`;
+        } else {
+          html += `<div class="anlam">${a.anlam}`;
+        }
+        if (a.orneklerListe) {
+          a.orneklerListe.forEach(o => {
+            html += `<br>"${o.ornek}"`;
+          });
+        }
+        html += `</div>`;
+      });
+      return html;
+    }
+
+    async function ara() {
+      const kelime = document.getElementById("kelime").value.trim();
+      const sonucDiv = document.getElementById("sonuc");
+      if (!kelime) {
+        sonucDiv.innerHTML = "❌ Lütfen bir kelime giriniz.";
+        return;
+      }
+      sonucDiv.innerHTML = "⏳ Yükleniyor...";
+
+      try {
+        const data = await sozlukGetir(kelime);
+        if (!data || data.length === 0) {
+          sonucDiv.innerHTML = `❌ '${kelime}' için sonuç bulunamadı.`;
+          return;
+        }
+
+        let html = `<h2>🔹 Sözcük: ${kelime}</h2>`;
+
+        for (const kayit of data) {
+          let baslik = kayit.kac && kayit.kac !== "0" 
+            ? ` (${toRoman(parseInt(kayit.kac))})` 
+            : "";
+          html += `<h2>${kayit.madde}${baslik}</h2>`;
+
+          if (kayit.anlamlarListe) {
+            html += `<h3>Anlamlar</h3>`;
+            html += formatAnlamlar(kayit.anlamlarListe);
+          }
+
+          if (kayit.deyimlerListe || kayit.atasozu) {
+            html += `<h3>📖 Deyimler & Atasözleri</h3>`;
+            let deyimler = [];
+
+            if (kayit.deyimlerListe) {
+              kayit.deyimlerListe.forEach(d => {
+                deyimler.push({ madde: d.madde, anlam: d.anlam, sira: d.anlam_sira });
+              });
+            }
+            if (kayit.atasozu) {
+              for (const a of kayit.atasozu) {
+                const detay = await sozlukGetir(a.madde);
+                if (detay && detay[0] && detay[0].anlamlarListe) {
+                  detay[0].anlamlarListe.forEach(ad => {
+                    deyimler.push({ madde: a.madde, anlam: ad.anlam, sira: ad.anlam_sira });
+                  });
+                }
+              }
+            }
+
+            const gruplar = {};
+            deyimler.forEach(d => {
+              if (!gruplar[d.madde]) gruplar[d.madde] = [];
+              gruplar[d.madde].push(d);
+            });
+
+            for (const madde in gruplar) {
+              const liste = gruplar[madde];
+              const coklu = liste.length > 1;
+              html += `<div class="deyim"><b>${madde}</b><br>`;
+              liste.forEach(d => {
+                if (coklu && d.sira && d.sira !== "0") {
+                  html += `${d.sira}. ${d.anlam}<br>`;
+                } else {
+                  html += `${d.anlam}<br>`;
+                }
+              });
+              html += `</div>`;
+            }
+          }
+
+          if (kayit.birlesikler) {
+            const birlesikKelimeler = kayit.birlesikler.split(", ");
+            html += `<h3>📚 Birleşik Kelimeler</h3>`;
+            for (const bk of birlesikKelimeler) {
+              const bData = await sozlukGetir(bk);
+              if (bData && bData[0] && bData[0].anlamlarListe) {
+                const liste = bData[0].anlamlarListe;
+                const coklu = liste.length > 1;
+                html += `<div class="birlesik"><b>${bk}</b><br>`;
+                liste.forEach(a => {
+                  if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
+                    html += `${a.anlam_sira}. ${a.anlam}<br>`;
+                  } else {
+                    html += `${a.anlam}<br>`;
+                  }
+                });
+                html += `</div>`;
+              }
+            }
+          }
+        }
+
+        sonucDiv.innerHTML = html;
+      } catch (err) {
+        console.error(err);
+        sonucDiv.innerHTML = "⚠️ TDK sunucusuna veya proxy servisine ulaşılamadı.";
+      }
+    }
+
+    // ✅ Buton ve Enter olayı mobilde de çalışsın
+    document.getElementById("araButonu").addEventListener("click", () => ara());
+    document.getElementById("kelime").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === "Search") {
+        ara();
+      }
+    });
+  </script>
+</body>
+</html>
