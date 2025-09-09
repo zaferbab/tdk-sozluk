@@ -28,11 +28,10 @@
   <script>
     async function sozlukGetir(kelime) {
       const url = `https://sozluk.gov.tr/gts?ara=${encodeURIComponent(kelime)}`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
 
       const res = await fetch(proxyUrl);
-      const wrapper = await res.json();
-      return JSON.parse(wrapper.contents);
+      return await res.json();
     }
 
     async function ara() {
@@ -89,6 +88,7 @@
 
         sonucDiv.innerHTML = html;
       } catch (err) {
+        console.error(err);
         sonucDiv.innerHTML = "⚠️ TDK sunucusuna veya proxy servisine ulaşılamadı.";
       }
     }
