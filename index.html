@@ -108,61 +108,92 @@
           return;
         }
 
-        const kayit = data[0];
         let html = `<h2>🔹 Sözcük: ${kelime}</h2>`;
 
-        // 🔹 Anlamlar
-        if (kayit.anlamlarListe) {
-          html += `<h2>Anlamlar</h2>`;
-          html += formatAnlamlar(kayit.anlamlarListe);
-        }
+        // birden fazla kayıt (eş sesliler) varsa her biri için dön
+        for (const kayit of data) {
+          // Başlık (ör. pas (I), pas (II))
+          let baslik = kayit.kac && kayit.kac !== "0" ? ` (${kayit.kac})` : "";
+          html += `<h2>${kayit.madde}${baslik}</h2>`;
 
-        // 🔹 Deyimler & Atasözleri
-        if (kayit.deyimlerListe || kayit.atasozu) {
-          html += `<h2>📖 Deyimler & Atasözleri</h2>`;
-          let deyimler = [];
-
-          if (kayit.deyimlerListe) {
-            kayit.deyimlerListe.forEach(d => {
-              deyimler.push({ madde: d.madde, anlam: d.anlam, sira: d.anlam_sira });
-            });
+          // 🔹 Anlamlar
+          if (kayit.anlamlarListe) {
+            html += `<h3>Anlamlar</h3>`;
+            html += formatAnlamlar(kayit.anlamlarListe);
           }
-          if (kayit.atasozu) {
-            for (const a of kayit.atasozu) {
-              const detay = await sozlukGetir(a.madde);
-              if (detay && detay[0] && detay[0].anlamlarListe) {
-                detay[0].anlamlarListe.forEach(ad => {
-                  deyimler.push({ madde: a.madde, anlam: ad.anlam, sira: ad.anlam_sira });
-                });
+
+          // 🔹 Deyimler & Atasözleri
+          if (kayit.deyimlerListe || kayit.atasozu) {
+            html += `<h3>📖 Deyimler & Atasözleri</h3>`;
+            let deyimler = [];
+
+            if (kayit.deyimlerListe) {
+              kayit.deyimlerListe.forEach(d => {
+                deyimler.push({ madde: d.madde, anlam: d.anlam, sira: d.anlam_sira });
+              });
+            }
+            if (kayit.atasozu) {
+              for (const a of kayit.atasozu) {
+                const detay = await sozlukGetir(a.madde);
+                if (detay && detay[0] && detay[0].anlamlarListe) {
+                  detay[0].anlamlarListe.forEach(ad => {
+                    deyimler.push({ madde: a.madde, anlam: ad.anlam, sira: ad.anlam_sira });
+                  });
+                }
               }
+            }
+
+            // grupla
+            const gruplar = {};
+            deyimler.forEach(d => {
+              if (!gruplar[d.madde]) gruplar[d.madde] = [];
+              gruplar[d.madde].push(d);
+            });
+
+            for (const madde in gruplar) {
+              const liste = gruplar[madde];
+              const coklu = liste.length > 1;
+              html += `<div class="deyim"><b>${madde}</b><br>`;
+              liste.forEach(d => {
+                if (coklu && d.sira && d.sira !== "0") {
+                  html += `${d.sira}. ${d.anlam}<br>`;
+                } else {
+                  html += `${d.anlam}<br>`;
+                }
+              });
+              html += `</div>`;
             }
           }
 
-          // grupla
-          const gruplar = {};
-          deyimler.forEach(d => {
-            if (!gruplar[d.madde]) gruplar[d.madde] = [];
-            gruplar[d.madde].push(d);
-          });
-
-          for (const madde in gruplar) {
-            const liste = gruplar[madde];
-            const coklu = liste.length > 1;
-            html += `<div class="deyim"><b>${madde}</b><br>`;
-            liste.forEach(d => {
-              if (coklu && d.sira && d.sira !== "0") {
-                html += `${d.sira}. ${d.anlam}<br>`;
-              } else {
-                html += `${d.anlam}<br>`;
+          // 🔹 Birleşik kelimeler
+          if (kayit.birlesikler) {
+            const birlesikKelimeler = kayit.birlesikler.split(", ");
+            html += `<h3>📚 Birleşik Kelimeler</h3>`;
+            for (const bk of birlesikKelimeler) {
+              const bData = await sozlukGetir(bk);
+              if (bData && bData[0] && bData[0].anlamlarListe) {
+                const liste = bData[0].anlamlarListe;
+                const coklu = liste.length > 1;
+                html += `<div class="birlesik"><b>${bk}</b><br>`;
+                liste.forEach(a => {
+                  if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
+                    html += `${a.anlam_sira}. ${a.anlam}<br>`;
+                  } else {
+                    html += `${a.anlam}<br>`;
+                  }
+                });
+                html += `</div>`;
               }
-            });
-            html += `</div>`;
+            }
           }
         }
 
-        // 🔹 Birleşik kelimeler
-        if (kayit.birlesikler) {
-          const birlesikKelimeler = kayit.birlesikler.split(", ");
-          html += `<h2>📚 Birleşik Kelimeler</h2>`;
-          for (const bk of birlesikKelimeler) {
-            const bData
+        sonucDiv.innerHTML = html;
+      } catch (err) {
+        console.error(err);
+        sonucDiv.innerHTML = "⚠️ TDK sunucusuna veya proxy servisine ulaşılamadı.";
+      }
+    }
+  </script>
+</body>
+</html>
