@@ -27,7 +27,7 @@
 
   <script>
     // Buraya kendi Vercel URL’ni yaz
-    const PROXY_URL = "https://senin-projen.vercel.app/api/tdk";
+    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
@@ -102,3 +102,4 @@
   </script>
 </body>
 </html>
+
