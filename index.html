@@ -26,56 +26,70 @@
   <div id="sonuc"></div>
 
   <script>
+    async function sozlukGetir(kelime) {
+      const url = `https://sozluk.gov.tr/gts?ara=${encodeURIComponent(kelime)}`;
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+      const res = await fetch(proxyUrl);
+      const wrapper = await res.json();
+      return JSON.parse(wrapper.contents);
+    }
+
     async function ara() {
       const kelime = document.getElementById("kelime").value.trim();
       const sonucDiv = document.getElementById("sonuc");
       sonucDiv.innerHTML = "⏳ Yükleniyor...";
 
       try {
-        // HTML sayfasını indir
-        const res = await fetch(`https://sozluk.gov.tr/?kelime=${encodeURIComponent(kelime)}`, {
-          headers: { "User-Agent": "Mozilla/5.0" }
-        });
-        const html = await res.text();
+        const data = await sozlukGetir(kelime);
+        if (!data || data.length === 0) {
+          sonucDiv.innerHTML = `❌ '${kelime}' için sonuç bulunamadı.`;
+          return;
+        }
 
-        // Geçici DOM oluştur
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
+        const kayit = data[0];
+        let html = `<h2>🔹 Sözcük: ${kelime}</h2>`;
 
-        let htmlOut = `<h2>🔹 Sözcük: ${kelime}</h2>`;
-
-        // 🔹 Anlamlar
-        const anlamlar = doc.querySelectorAll(".anlam");
-        if (anlamlar.length > 0) {
-          htmlOut += `<h2>Anlamlar</h2>`;
-          anlamlar.forEach(a => {
-            htmlOut += `<div class="anlam">${a.innerText}</div>`;
+        // Anlamlar
+        if (kayit.anlamlarListe) {
+          kayit.anlamlarListe.forEach(a => {
+            html += `<div class="anlam">${a.anlam}`;
+            if (a.orneklerListe) {
+              a.orneklerListe.forEach(o => {
+                html += `<br><em>Örnek:</em> "${o.ornek}"`;
+              });
+            }
+            html += `</div>`;
           });
         }
 
-        // 🔹 Örnekler (anlamların içinde geliyor zaten)
-
-        // 🔹 Deyimler & Atasözleri
-        const deyimler = doc.querySelectorAll("#atasoz");
-        if (deyimler.length > 0) {
-          htmlOut += `<h2>📖 Deyimler & Atasözleri</h2>`;
-          deyimler.forEach(d => {
-            htmlOut += `<div class="deyim">${d.innerText}</div>`;
+        // Deyimler & Atasözleri
+        if (kayit.deyimlerListe) {
+          html += `<h2>📖 Deyimler & Atasözleri</h2>`;
+          kayit.deyimlerListe.forEach(d => {
+            html += `<div class="deyim"><b>${d.madde}</b>: ${d.anlam}</div>`;
           });
         }
 
-        // 🔹 Birleşik fiiller ve kalıp sözler
-        const birlesikler = doc.querySelectorAll("#birlesikler a");
-        if (birlesikler.length > 0) {
-          htmlOut += `<h2>📚 Birleşik Fiiller & Kalıp Sözler</h2>`;
-          birlesikler.forEach(b => {
-            htmlOut += `<div class="birlesik">${b.innerText}</div>`;
-          });
+        // Birleşik kelimeler
+        if (kayit.birlesikler) {
+          const birlesikKelimeler = kayit.birlesikler.split(", ");
+          html += `<h2>📚 Birleşik Kelimeler</h2>`;
+          for (const bk of birlesikKelimeler) {
+            const bData = await sozlukGetir(bk);
+            if (bData && bData[0] && bData[0].anlamlarListe) {
+              html += `<div class="birlesik"><b>${bk}</b><br>`;
+              bData[0].anlamlarListe.forEach(a => {
+                html += `${a.anlam}<br>`;
+              });
+              html += `</div>`;
+            }
+          }
         }
 
-        sonucDiv.innerHTML = htmlOut;
+        sonucDiv.innerHTML = html;
       } catch (err) {
-        sonucDiv.innerHTML = "⚠️ TDK sunucusuna bağlanılamadı veya engellendi.";
+        sonucDiv.innerHTML = "⚠️ TDK sunucusuna veya proxy servisine ulaşılamadı.";
       }
     }
   </script>
