@@ -49,9 +49,10 @@
       margin: 12px 0;
       padding: 8px;
       border-left: 4px solid darkred;
+      background: transparent; /* ✅ arka plan şeffaf */
     }
-    .deyim { border-left-color: #0055cc; }
-    .birlesik { border-left-color: green; }
+    .deyim { border-left-color: #0055cc; background: transparent; }
+    .birlesik { border-left-color: green; background: transparent; }
     h2 { color: #333; margin-top: 25px; }
   </style>
 </head>
@@ -78,8 +79,9 @@
 
     function formatAnlamlar(liste) {
       let html = "";
+      const coklu = liste.length > 1;
       liste.forEach(a => {
-        if (a.anlam_sira && a.anlam_sira !== "0") {
+        if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
           html += `<div class="anlam"><b>${a.anlam_sira}.</b> ${a.anlam}`;
         } else {
           html += `<div class="anlam">${a.anlam}`;
@@ -144,9 +146,11 @@
           });
 
           for (const madde in gruplar) {
+            const liste = gruplar[madde];
+            const coklu = liste.length > 1;
             html += `<div class="deyim"><b>${madde}</b><br>`;
-            gruplar[madde].forEach(d => {
-              if (d.sira && d.sira !== "0") {
+            liste.forEach(d => {
+              if (coklu && d.sira && d.sira !== "0") {
                 html += `${d.sira}. ${d.anlam}<br>`;
               } else {
                 html += `${d.anlam}<br>`;
@@ -163,9 +167,11 @@
           for (const bk of birlesikKelimeler) {
             const bData = await sozlukGetir(bk);
             if (bData && bData[0] && bData[0].anlamlarListe) {
+              const liste = bData[0].anlamlarListe;
+              const coklu = liste.length > 1;
               html += `<div class="birlesik"><b>${bk}</b><br>`;
-              bData[0].anlamlarListe.forEach(a => {
-                if (a.anlam_sira && a.anlam_sira !== "0") {
+              liste.forEach(a => {
+                if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
                   html += `${a.anlam_sira}. ${a.anlam}<br>`;
                 } else {
                   html += `${a.anlam}<br>`;
