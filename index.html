@@ -2,32 +2,93 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>TDK Sözlük (Eksiksiz)</title>
+  <title>Erkan Ulu Okulları Türkçe Zümresi Sözlük Projesi</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
-    h1 { color: darkred; }
-    h2 { margin-top: 20px; color: #333; }
-    .anlam, .deyim, .birlesik {
-      margin: 8px 0;
-      padding: 10px;
-      background: #fff;
-      border-left: 4px solid darkred;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 20px;
     }
-    .deyim { border-left-color: #55f; background: #eef; }
-    .birlesik { border-left-color: green; background: #f9f9f9; }
+    header {
+      text-align: center;
+      padding: 20px;
+      background: darkred;
+      color: white;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+    #arama {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #kelime {
+      width: 300px;
+      padding: 10px;
+      border: 2px solid darkred;
+      border-radius: 8px 0 0 8px;
+      font-size: 1em;
+      outline: none;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      background: darkred;
+      color: white;
+      font-size: 1em;
+      cursor: pointer;
+      border-radius: 0 8px 8px 0;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #a00000;
+    }
+    #sonuc {
+      max-width: 700px;
+      margin: auto;
+    }
+    .anlam, .deyim, .birlesik {
+      margin: 12px 0;
+      padding: 12px;
+      background: white;
+      border-left: 5px solid darkred;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .deyim {
+      border-left-color: #0055cc;
+      background: #f0f6ff;
+    }
+    .birlesik {
+      border-left-color: green;
+      background: #f6fff6;
+    }
+    h2 {
+      color: #333;
+      margin-top: 25px;
+    }
   </style>
 </head>
 <body>
-  <h1>📖 TDK Sözlük</h1>
-  <input id="kelime" type="text" placeholder="Bir kelime yaz..." />
-  <button onclick="ara()">Ara</button>
+  <header>
+    <h1>Erkan Ulu Okulları Türkçe Zümresi Sözlük Projesi</h1>
+  </header>
+
+  <div id="arama">
+    <input id="kelime" type="text" placeholder="Bir kelime yazın..." onkeypress="if(event.key==='Enter'){ara();}">
+    <button onclick="ara()">Ara</button>
+  </div>
 
   <div id="sonuc"></div>
 
   <script>
-    // Buraya kendi Vercel URL’ni yaz
-    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
+    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk"; // senin proxy adresin
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
@@ -62,7 +123,7 @@
           });
         }
 
-        // 🔹 Deyimler & Atasözleri (deyimlerListe + atasozu)
+        // 🔹 Deyimler & Atasözleri (hem deyimlerListe hem atasozu)
         if (kayit.deyimlerListe || kayit.atasozu) {
           html += `<h2>📖 Deyimler & Atasözleri</h2>`;
           if (kayit.deyimlerListe) {
@@ -71,9 +132,16 @@
             });
           }
           if (kayit.atasozu) {
-            kayit.atasozu.forEach(a => {
-              html += `<div class="deyim"><b>${a.madde}</b></div>`;
-            });
+            for (const a of kayit.atasozu) {
+              const detay = await sozlukGetir(a.madde);
+              if (detay && detay[0] && detay[0].anlamlarListe) {
+                detay[0].anlamlarListe.forEach(ad => {
+                  html += `<div class="deyim"><b>${a.madde}</b>: ${ad.anlam}</div>`;
+                });
+              } else {
+                html += `<div class="deyim"><b>${a.madde}</b></div>`;
+              }
+            }
           }
         }
 
@@ -102,4 +170,3 @@
   </script>
 </body>
 </html>
-
