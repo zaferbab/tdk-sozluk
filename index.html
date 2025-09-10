@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- mobil uyum -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Erkan Ulu Okulları Türkçe Zümresi Sözlük Projesi</title>
   <style>
     body {
@@ -57,17 +57,17 @@
     }
     button:hover { background: #a00000; }
     #sonuc { max-width: 700px; margin: auto; }
-    .anlam, .deyim, .birlesik {
+    .anlam, .deyim, .atasozu, .birlesik {
       margin: 12px 0;
       padding: 8px;
       border-left: 4px solid darkred;
       background: transparent;
     }
-    .deyim { border-left-color: #0055cc; background: transparent; }
-    .birlesik { border-left-color: green; background: transparent; }
+    .deyim { border-left-color: #0055cc; }
+    .atasozu { border-left-color: orange; }
+    .birlesik { border-left-color: green; }
     h2 { color: #333; margin-top: 25px; font-size: 1.2em; }
     h3 { font-size: 1.1em; }
-
     @media (max-width: 600px) {
       body { padding: 10px; }
       h1 { font-size: 1.2em; }
@@ -99,9 +99,15 @@
 
   <script>
     const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
+    const ATASOZU_URL = "https://sozluk.gov.tr/atasozu?ara="; // atasözleri API
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
+      return await res.json();
+    }
+
+    async function atasozuGetir(kelime) {
+      const res = await fetch(`${ATASOZU_URL}${encodeURIComponent(kelime)}`);
       return await res.json();
     }
 
@@ -158,39 +164,21 @@
             html += formatAnlamlar(kayit.anlamlarListe);
           }
 
-          if (kayit.deyimlerListe || kayit.atasozu) {
-            html += `<h3>📖 Deyimler & Atasözleri</h3>`;
-            let deyimler = [];
-
-            if (kayit.deyimlerListe) {
-              kayit.deyimlerListe.forEach(d => {
-                deyimler.push({ madde: d.madde, anlam: d.anlam, sira: d.anlam_sira });
-              });
-            }
-            if (kayit.atasozu) {
-              for (const a of kayit.atasozu) {
-                const detay = await sozlukGetir(a.madde);
-                if (detay && detay[0] && detay[0].anlamlarListe) {
-                  detay[0].anlamlarListe.forEach(ad => {
-                    deyimler.push({ madde: a.madde, anlam: ad.anlam, sira: ad.anlam_sira });
-                  });
-                }
-              }
-            }
-
+          // 🔹 Deyimler
+          if (kayit.deyimlerListe) {
+            html += `<h3>📖 Deyimler</h3>`;
             const gruplar = {};
-            deyimler.forEach(d => {
+            kayit.deyimlerListe.forEach(d => {
               if (!gruplar[d.madde]) gruplar[d.madde] = [];
               gruplar[d.madde].push(d);
             });
-
             for (const madde in gruplar) {
               const liste = gruplar[madde];
               const coklu = liste.length > 1;
               html += `<div class="deyim"><b>${madde}</b><br>`;
               liste.forEach(d => {
-                if (coklu && d.sira && d.sira !== "0") {
-                  html += `${d.sira}. ${d.anlam}<br>`;
+                if (coklu && d.anlam_sira && d.anlam_sira !== "0") {
+                  html += `${d.anlam_sira}. ${d.anlam}<br>`;
                 } else {
                   html += `${d.anlam}<br>`;
                 }
@@ -199,6 +187,18 @@
             }
           }
 
+          // 🔹 Atasözleri
+          if (kayit.atasozu) {
+            html += `<h3>📜 Atasözleri</h3>`;
+            for (const a of kayit.atasozu) {
+              const detay = await atasozuGetir(a.madde);
+              if (detay && detay[0] && detay[0].anlam) {
+                html += `<div class="atasozu"><b>${a.madde}</b><br>${detay[0].anlam}</div>`;
+              }
+            }
+          }
+
+          // 🔹 Birleşik kelimeler
           if (kayit.birlesikler) {
             const birlesikKelimeler = kayit.birlesikler.split(", ");
             html += `<h3>📚 Birleşik Kelimeler</h3>`;
@@ -228,7 +228,6 @@
       }
     }
 
-    // ✅ Buton ve Enter olayı mobilde de çalışsın
     document.getElementById("araButonu").addEventListener("click", () => ara());
     document.getElementById("kelime").addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === "Search") {
