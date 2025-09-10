@@ -57,12 +57,14 @@
     }
     button:hover { background: #a00000; }
     #sonuc { max-width: 700px; margin: auto; }
-    .anlam, .deyim, .atasozu, .birlesik {
+    .anlam, .fiil, .kalip, .deyim, .atasozu, .birlesik {
       margin: 12px 0;
       padding: 8px;
       border-left: 4px solid darkred;
       background: transparent;
     }
+    .fiil { border-left-color: purple; }
+    .kalip { border-left-color: teal; }
     .deyim { border-left-color: #0055cc; }
     .atasozu { border-left-color: orange; }
     .birlesik { border-left-color: green; }
@@ -98,14 +100,13 @@
   <div id="sonuc"></div>
 
   <script>
-    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk"; // kendi proxy adresin
+    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
       return await res.json();
     }
 
-    // ✅ Atasözleri için proxy'yi kullan
     async function atasozuGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}&tip=atasozu`);
       return await res.json();
@@ -135,6 +136,10 @@
       return html;
     }
 
+    function isFiil(kelime) {
+      return kelime.includes("mek") || kelime.includes("mak") || kelime.includes("etmek") || kelime.includes("olmak");
+    }
+
     async function ara() {
       const kelime = document.getElementById("kelime").value.trim();
       const sonucDiv = document.getElementById("sonuc");
@@ -162,6 +167,57 @@
           if (kayit.anlamlarListe) {
             html += `<h3>Anlamlar</h3>`;
             html += formatAnlamlar(kayit.anlamlarListe);
+          }
+
+          // 🔹 Birleşik Fiiller + Kalıplaşmış İfadeler
+          if (kayit.birlesikler) {
+            const birlesikKelimeler = kayit.birlesikler.split(", ");
+            let fiiller = [];
+            let isimler = [];
+            birlesikKelimeler.forEach(bk => {
+              if (isFiil(bk)) fiiller.push(bk);
+              else isimler.push(bk);
+            });
+
+            if (fiiller.length > 0) {
+              html += `<h3>📚 Birleşik Fiiller</h3>`;
+              for (const f of fiiller) {
+                const fData = await sozlukGetir(f);
+                if (fData && fData[0] && fData[0].anlamlarListe) {
+                  const liste = fData[0].anlamlarListe;
+                  const coklu = liste.length > 1;
+                  html += `<div class="fiil"><b>${f}</b><br>`;
+                  liste.forEach(a => {
+                    if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
+                      html += `${a.anlam_sira}. ${a.anlam}<br>`;
+                    } else {
+                      html += `${a.anlam}<br>`;
+                    }
+                  });
+                  html += `</div>`;
+                }
+              }
+            }
+
+            if (isimler.length > 0) {
+              html += `<h3>📦 Birleşik Kelimeler</h3>`;
+              for (const i of isimler) {
+                const iData = await sozlukGetir(i);
+                if (iData && iData[0] && iData[0].anlamlarListe) {
+                  const liste = iData[0].anlamlarListe;
+                  const coklu = liste.length > 1;
+                  html += `<div class="birlesik"><b>${i}</b><br>`;
+                  liste.forEach(a => {
+                    if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
+                      html += `${a.anlam_sira}. ${a.anlam}<br>`;
+                    } else {
+                      html += `${a.anlam}<br>`;
+                    }
+                  });
+                  html += `</div>`;
+                }
+              }
+            }
           }
 
           // 🔹 Deyimler
@@ -194,28 +250,6 @@
               const detay = await atasozuGetir(a.madde);
               if (detay && detay[0] && detay[0].anlam) {
                 html += `<div class="atasozu"><b>${a.madde}</b><br>${detay[0].anlam}</div>`;
-              }
-            }
-          }
-
-          // 🔹 Birleşik kelimeler
-          if (kayit.birlesikler) {
-            const birlesikKelimeler = kayit.birlesikler.split(", ");
-            html += `<h3>📚 Birleşik Kelimeler</h3>`;
-            for (const bk of birlesikKelimeler) {
-              const bData = await sozlukGetir(bk);
-              if (bData && bData[0] && bData[0].anlamlarListe) {
-                const liste = bData[0].anlamlarListe;
-                const coklu = liste.length > 1;
-                html += `<div class="birlesik"><b>${bk}</b><br>`;
-                liste.forEach(a => {
-                  if (coklu && a.anlam_sira && a.anlam_sira !== "0") {
-                    html += `${a.anlam_sira}. ${a.anlam}<br>`;
-                  } else {
-                    html += `${a.anlam}<br>`;
-                  }
-                });
-                html += `</div>`;
               }
             }
           }
