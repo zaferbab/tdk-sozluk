@@ -98,16 +98,16 @@
   <div id="sonuc"></div>
 
   <script>
-    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk";
-    const ATASOZU_URL = "https://sozluk.gov.tr/atasozu?ara="; // atasözleri API
+    const PROXY_URL = "https://tdk-sozluk-iota.vercel.app/api/tdk"; // kendi proxy adresin
 
     async function sozlukGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}`);
       return await res.json();
     }
 
+    // ✅ Atasözleri için proxy'yi kullan
     async function atasozuGetir(kelime) {
-      const res = await fetch(`${ATASOZU_URL}${encodeURIComponent(kelime)}`);
+      const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}&tip=atasozu`);
       return await res.json();
     }
 
