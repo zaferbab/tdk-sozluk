@@ -225,20 +225,20 @@
 
         // Deyimler & Atasözleri (ayrı API'den)
         if (deyimAtasozuData && deyimAtasozuData.length > 0) {
-          const deyimler = deyimAtasozuData.filter(x => x.tip === "Deyim");
-          const atasozleri = deyimAtasozuData.filter(x => x.tip === "Atasözü");
+          const deyimler = deyimAtasozuData.filter(x => x.turu === "Deyim");
+          const atasozleri = deyimAtasozuData.filter(x => x.turu === "Atasözü");
 
           if (deyimler.length > 0) {
             html += `<h3>📖 Deyimler</h3>`;
             deyimler.forEach(d => {
-              html += `<div class="deyim"><b>${d.madde}</b><br>${d.anlam}</div>`;
+              html += `<div class="deyim"><b>${d.sozum}</b><br>${d.anlami || d.anlam}</div>`;
             });
           }
 
           if (atasozleri.length > 0) {
             html += `<h3>📜 Atasözleri</h3>`;
             atasozleri.forEach(a => {
-              html += `<div class="atasozu"><b>${a.madde}</b><br>${a.anlam}</div>`;
+              html += `<div class="atasozu"><b>${a.sozum}</b><br>${a.anlami || a.anlam}</div>`;
             });
           }
         }
