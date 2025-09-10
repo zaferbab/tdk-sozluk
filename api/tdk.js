@@ -1,5 +1,4 @@
 // api/tdk.js
-import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   const { kelime, tip } = req.query;
