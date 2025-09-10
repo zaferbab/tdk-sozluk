@@ -57,14 +57,13 @@
     }
     button:hover { background: #a00000; }
     #sonuc { max-width: 700px; margin: auto; }
-    .anlam, .fiil, .kalip, .deyim, .atasozu, .birlesik {
+    .anlam, .fiil, .deyim, .atasozu, .birlesik {
       margin: 12px 0;
       padding: 8px;
       border-left: 4px solid darkred;
       background: transparent;
     }
     .fiil { border-left-color: purple; }
-    .kalip { border-left-color: teal; }
     .deyim { border-left-color: #0055cc; }
     .atasozu { border-left-color: orange; }
     .birlesik { border-left-color: green; }
@@ -107,7 +106,7 @@
       return await res.json();
     }
 
-    async function atasozuGetir(kelime) {
+    async function atasozuDeyimGetir(kelime) {
       const res = await fetch(`${PROXY_URL}?kelime=${encodeURIComponent(kelime)}&tip=atasozu`);
       return await res.json();
     }
@@ -151,13 +150,16 @@
 
       try {
         const data = await sozlukGetir(kelime);
-        if (!data || data.length === 0) {
+        const deyimAtasozuData = await atasozuDeyimGetir(kelime);
+
+        if ((!data || data.length === 0) && (!deyimAtasozuData || deyimAtasozuData.length === 0)) {
           sonucDiv.innerHTML = `❌ '${kelime}' için sonuç bulunamadı.`;
           return;
         }
 
         let html = `<h2>🔹 Sözcük: ${kelime}</h2>`;
 
+        // Anlamlar
         for (const kayit of data) {
           let baslik = kayit.kac && kayit.kac !== "0" 
             ? ` (${toRoman(parseInt(kayit.kac))})` 
@@ -169,7 +171,7 @@
             html += formatAnlamlar(kayit.anlamlarListe);
           }
 
-          // 🔹 Birleşik Fiiller + Kalıplaşmış İfadeler
+          // Birleşikler
           if (kayit.birlesikler) {
             const birlesikKelimeler = kayit.birlesikler.split(", ");
             let fiiller = [];
@@ -219,39 +221,25 @@
               }
             }
           }
+        }
 
-          // 🔹 Deyimler
-          if (kayit.deyimlerListe) {
+        // Deyimler & Atasözleri (ayrı API'den)
+        if (deyimAtasozuData && deyimAtasozuData.length > 0) {
+          const deyimler = deyimAtasozuData.filter(x => x.tip === "Deyim");
+          const atasozleri = deyimAtasozuData.filter(x => x.tip === "Atasözü");
+
+          if (deyimler.length > 0) {
             html += `<h3>📖 Deyimler</h3>`;
-            const gruplar = {};
-            kayit.deyimlerListe.forEach(d => {
-              if (!gruplar[d.madde]) gruplar[d.madde] = [];
-              gruplar[d.madde].push(d);
+            deyimler.forEach(d => {
+              html += `<div class="deyim"><b>${d.madde}</b><br>${d.anlam}</div>`;
             });
-            for (const madde in gruplar) {
-              const liste = gruplar[madde];
-              const coklu = liste.length > 1;
-              html += `<div class="deyim"><b>${madde}</b><br>`;
-              liste.forEach(d => {
-                if (coklu && d.anlam_sira && d.anlam_sira !== "0") {
-                  html += `${d.anlam_sira}. ${d.anlam}<br>`;
-                } else {
-                  html += `${d.anlam}<br>`;
-                }
-              });
-              html += `</div>`;
-            }
           }
 
-          // 🔹 Atasözleri
-          if (kayit.atasozu) {
+          if (atasozleri.length > 0) {
             html += `<h3>📜 Atasözleri</h3>`;
-            for (const a of kayit.atasozu) {
-              const detay = await atasozuGetir(a.madde);
-              if (detay && detay[0] && detay[0].anlam) {
-                html += `<div class="atasozu"><b>${a.madde}</b><br>${detay[0].anlam}</div>`;
-              }
-            }
+            atasozleri.forEach(a => {
+              html += `<div class="atasozu"><b>${a.madde}</b><br>${a.anlam}</div>`;
+            });
           }
         }
 
